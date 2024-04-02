@@ -4,48 +4,88 @@ const {
   ActionRowBuilder,
   ComponentType,
   SlashCommandBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  TextInputBuilder,
+  ModalBuilder,
+  TextInputStyle,
 } = require("discord.js");
 
 const data = new SlashCommandBuilder()
-  .setName("set-bday")
+  .setName("bday")
   .setDescription("Set birthday month and day for server announcements.");
 
 const execute = async (interaction) => {
   const months = [
-    { label: "January", value: 1 },
-    { label: "February", value: 2 },
-    { label: "March", value: 3 },
-    { label: "April", value: 4 },
-    { label: "May", value: 5 },
-    { label: "June", value: 6 },
-    { label: "July", value: 7 },
-    { label: "August", value: 8 },
-    { label: "September", value: 9 },
-    { label: "October", value: 10 },
-    { label: "November", value: 11 },
-    { label: "December", value: 12 },
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
-  //   const days = Array(31).keys().map(i => {label: i, value: i})
-  //   console.log(days)
+  const days = {
+    January: 31,
+    February: 29,
+    March: 31,
+    April: 30,
+    May: 31,
+    June: 30,
+    July: 31,
+    August: 31,
+    September: 30,
+    October: 31,
+    November: 30,
+    December: 31,
+  };
 
-  const selectMenu = new StringSelectMenuBuilder()
-    .setCustomId(interaction.id)
-    .setPlaceholder("Choose a month...")
-    .setMinValues(1)
-    .setMaxValues(12)
-    .addOptions(
-      months.map((m) =>
-        new StringSelectMenuOptionBuilder()
-          .setLabel(m.label)
-          .setValue(`${m.value}`)
-      )
-    );
+  const modal = new ModalBuilder({
+    customId: `bdayModal-${interaction.user.id}`,
+    title: "Input Birthday 🍰",
+  });
 
-  const actionRow = new ActionRowBuilder().addComponents(selectMenu);
+  const monthInput = new TextInputBuilder({
+    customId: "monthInput",
+    label: "What month were you born?",
+    style: TextInputStyle.Short,
+    maxLength: 2,
+    placeholder: "mm",
+    required: true,
+  });
 
-  const monthReply = await interaction.reply({
-    components: [actionRow],
+  const dayInput = new TextInputBuilder({
+    customId: "dayInput",
+    label: "What day were you born?",
+    style: TextInputStyle.Short,
+    maxLength: 2,
+    placeholder: "dd",
+    required: true,
+  });
+
+  const monthActionRow = new ActionRowBuilder().addComponents(monthInput);
+  const dayActionRow = new ActionRowBuilder().addComponents(dayInput);
+
+  modal.addComponents(monthActionRow, dayActionRow);
+
+  await interaction.showModal(modal);
+
+  const filter = (i) => i.customId === `bdayModal-${i.user.id}`;
+
+  interaction.awaitModalSubmit({ filter, time: 30_000 }).then((i) => {
+    const month = i.fields.getTextInputValue("monthInput");
+    const day = i.fields.getTextInputValue("dayInput");
+
+    i.reply({
+      content: `You set your birthday to ${month} ${day}`,
+      ephemeral: true,
+    });
   });
 };
 
