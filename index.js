@@ -2,6 +2,18 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { Client, Collection, Events, GatewayIntentBits } = require("discord.js");
 const dotenv = require("dotenv").config();
+const mongoose = require("mongoose");
+
+const connectMongoDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_DB_STRING);
+    console.log("Connected to MongoDB");
+  } catch (error) {
+    console.log(`Error connection to MongoDB: ${error}`);
+  }
+};
+
+connectMongoDB();
 
 // Create a new client instance
 const client = new Client({

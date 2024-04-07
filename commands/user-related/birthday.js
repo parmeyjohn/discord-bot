@@ -11,6 +11,8 @@ const {
   TextInputStyle,
 } = require("discord.js");
 
+const mongoose = require("mongoose");
+
 const data = new SlashCommandBuilder()
   .setName("bday")
   .setDescription("Set birthday month and day for server announcements.");
@@ -30,6 +32,7 @@ const execute = async (interaction) => {
     ["November", 30],
     ["December", 31],
   ];
+  const birthdays = mongoose.connection.collection("birthdays");
 
   const modal = new ModalBuilder({
     customId: `bdayModal-${interaction.user.id}`,
@@ -81,6 +84,18 @@ const execute = async (interaction) => {
         ephemeral: true,
       });
     }
+
+    const birthdays = mongoose.connection.collection("birthdays");
+
+    birthdays
+      .findOneAndUpdate(
+        { [`${intMonth}-${intDay}`]: { $exists: true } },
+        { $push: "username" }
+      )
+      .then((obj) => console.log(obj))
+      .catch((err) => {
+        console.log("Unable to retrieve birthday:", err);
+      });
 
     i.reply({
       content: `You set your birthday to ${months[intMonth - 1][0]} ${day}`,
