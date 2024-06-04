@@ -1,7 +1,13 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { Client, Collection, Events, GatewayIntentBits } = require("discord.js");
-const dotenv = require("dotenv").config();
+const {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  User,
+} = require("discord.js");
+require("dotenv").config();
 const mongoose = require("mongoose");
 
 const connectMongoDB = async () => {
@@ -14,6 +20,8 @@ const connectMongoDB = async () => {
 };
 
 connectMongoDB();
+const users = mongoose.connection.collection("users");
+const UserObject = require("./models/user");
 
 // Create a new client instance
 const client = new Client({
@@ -22,6 +30,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
   ],
 });
 
@@ -50,8 +59,21 @@ for (const folder of commandFolders) {
   }
 }
 
+// executes once bot is running
 client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+});
+
+// executes when the bot joins a server
+client.on(Events.GuildCreate, (guild) => {
+  // TODO: add loop to create db objects for existing users
+  console.log("Bot entered guild");
+});
+
+// executes when a member joins the server
+client.on(Events.GuildMemberAdd, async (member) => {
+  // TODO: check if user id is in user collection, add if they aren't
+  console.log(member);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
