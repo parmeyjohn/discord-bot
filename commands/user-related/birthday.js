@@ -11,8 +11,15 @@ const {
   TextInputStyle,
 } = require("discord.js");
 
-const mongoose = require("mongoose");
 const UserModel = require("../../models/user");
+const today = new Date()
+  .toLocaleDateString("en-US", {
+    timeZone: "America/Los_Angeles",
+  })
+  .split("/")
+  .slice(0, 2);
+const [month, day] = today;
+
 const data = new SlashCommandBuilder()
   .setName("bday")
   .setDescription("Set birthday month and day for server announcements.");
@@ -93,6 +100,13 @@ const execute = async (interaction) => {
       content: `You set your birthday to ${months[intMonth - 1][0]} ${day}`,
       ephemeral: true,
     });
+
+    if (`${month}-${day}` == `${intMonth}-${intDay}`) {
+      const bdayChannel = i.guild.channels.cache.get(
+        process.env.BDAY_CHANNEL_ID
+      );
+      bdayChannel.send(`Happy birthday <@${i.user.id}>!`);
+    }
   });
 };
 

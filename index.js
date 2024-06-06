@@ -8,6 +8,7 @@ const {
   User,
 } = require("discord.js");
 require("dotenv").config();
+
 const mongoose = require("mongoose");
 
 const connectMongoDB = async () => {
@@ -23,6 +24,7 @@ connectMongoDB();
 const users = mongoose.connection.collection("users");
 const UserModel = require("./models/user");
 const { listMembers } = require("./utils");
+const { CronJob } = require("cron");
 
 // Create a new client instance
 const client = new Client({
@@ -61,8 +63,28 @@ for (const folder of commandFolders) {
 }
 
 // executes once bot is running
-client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+client.once(Events.ClientReady, (client) => {
+  console.log(`Ready! Logged in as ${client.user.tag}`);
+  const server = client.guilds.cache.get(process.env.GUILD_ID);
+  const bdayChannel = server.channels.cache.get(process.env.BDAY_CHANNEL_ID);
+
+  const bdayCheck = new CronJob("* * * * *", async () => {
+    const today = new Date()
+      .toLocaleDateString("en-US", {
+        timeZone: "America/Los_Angeles",
+      })
+      .split("/")
+      .slice(0, 2);
+    const [month, day] = today;
+
+    const userList = await UserModel.find({});
+    userList.forEach((u) => {
+      if (u.birthday == `${month}-${day}`) {
+        bdayChannel.send(`Happy birthday <@${u._id}>!`);
+      }
+    });
+  });
+  bdayCheck.start();
 });
 
 // executes when the bot joins a server
