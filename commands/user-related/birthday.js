@@ -12,7 +12,7 @@ const {
 } = require("discord.js");
 
 const mongoose = require("mongoose");
-
+const UserModel = require("../../models/user");
 const data = new SlashCommandBuilder()
   .setName("bday")
   .setDescription("Set birthday month and day for server announcements.");
@@ -32,7 +32,6 @@ const execute = async (interaction) => {
     ["November", 30],
     ["December", 31],
   ];
-  const birthdays = mongoose.connection.collection("birthdays");
 
   const modal = new ModalBuilder({
     customId: `bdayModal-${interaction.user.id}`,
@@ -66,7 +65,7 @@ const execute = async (interaction) => {
 
   const filter = (i) => i.customId === `bdayModal-${i.user.id}`;
 
-  interaction.awaitModalSubmit({ filter, time: 300_000 }).then((i) => {
+  interaction.awaitModalSubmit({ filter, time: 300_000 }).then(async (i) => {
     const month = i.fields.getTextInputValue("monthInput");
     const day = i.fields.getTextInputValue("dayInput");
     const intMonth = parseInt(month);
@@ -84,18 +83,11 @@ const execute = async (interaction) => {
         ephemeral: true,
       });
     }
-
-    const birthdays = mongoose.connection.collection("birthdays");
-
-    birthdays
-      .findOneAndUpdate(
-        { [`${intMonth}-${intDay}`]: { $exists: true } },
-        { $push: "username" }
-      )
-      .then((obj) => console.log(obj))
-      .catch((err) => {
-        console.log("Unable to retrieve birthday:", err);
-      });
+    await UserModel.findOneAndUpdate(
+      { _id: i.user.id },
+      { birthday: `${intMonth}-${intDay}` },
+      { upsert: true }
+    );
 
     i.reply({
       content: `You set your birthday to ${months[intMonth - 1][0]} ${day}`,
