@@ -21,7 +21,8 @@ const connectMongoDB = async () => {
 
 connectMongoDB();
 const users = mongoose.connection.collection("users");
-const UserObject = require("./models/user");
+const UserModel = require("./models/user");
+const { listMembers } = require("./utils");
 
 // Create a new client instance
 const client = new Client({
@@ -66,14 +67,43 @@ client.once(Events.ClientReady, (readyClient) => {
 
 // executes when the bot joins a server
 client.on(Events.GuildCreate, (guild) => {
-  // TODO: add loop to create db objects for existing users
   console.log("Bot entered guild");
+  const memberList = listMembers(guild);
+  try {
+    memberList.forEach(
+      async (member) =>
+        await UserModel.findOneAndUpdate(
+          { _id: member.uid },
+          { username: member.username },
+          { upsert: true }
+        )
+    );
+  } catch (err) {
+    console.log("Bot Join Error:", err);
+  }
 });
 
 // executes when a member joins the server
 client.on(Events.GuildMemberAdd, async (member) => {
-  // TODO: check if user id is in user collection, add if they aren't
-  console.log(member);
+  if (member.user.bot) {
+    return;
+  }
+  try {
+    await UserModel.create({
+      _id: member.user.id,
+      username: member.user.username,
+    });
+  } catch (err) {
+    console.log("Member Add Error:", err);
+  }
+});
+
+client.on(Events.GuildMemberRemove, async (member) => {
+  try {
+    await UserModel.findByIdAndDelete(member.user.id);
+  } catch (err) {
+    console.log("Member Remove Error:", err);
+  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
