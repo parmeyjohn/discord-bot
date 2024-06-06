@@ -65,6 +65,8 @@ for (const folder of commandFolders) {
 // executes once bot is running
 client.once(Events.ClientReady, (client) => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
+  client.user.setActivity({ name: "Hello Kitty Island Adventure" });
+
   const server = client.guilds.cache.get(process.env.GUILD_ID);
   const bdayChannel = server.channels.cache.get(process.env.BDAY_CHANNEL_ID);
 
