@@ -8,7 +8,6 @@ const {
   User,
 } = require("discord.js");
 require("dotenv").config();
-
 const mongoose = require("mongoose");
 
 const connectMongoDB = async () => {
@@ -25,6 +24,10 @@ const users = mongoose.connection.collection("users");
 const UserModel = require("./models/user");
 const { listMembers } = require("./utils");
 const { CronJob } = require("cron");
+const roleList = [
+  { emoji: "💚", name: "role1", id: "1248437895539462225" },
+  { emoji: "💙", name: "role2", id: "1248437975583293440" },
+];
 
 // Create a new client instance
 const client = new Client({
@@ -34,6 +37,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessageReactions,
   ],
 });
 
@@ -63,13 +67,20 @@ for (const folder of commandFolders) {
 }
 
 // executes once bot is running
-client.once(Events.ClientReady, (client) => {
+client.once(Events.ClientReady, async (client) => {
   console.log(`Ready! Logged in as ${client.user.tag}`);
   client.user.setActivity({ name: "Hello Kitty Island Adventure" });
 
   const server = client.guilds.cache.get(process.env.GUILD_ID);
+  const rolesChannel = server.channels.cache.get(process.env.ROLES_CHANNEL_ID);
+  const reactionMessage = await rolesChannel.messages.fetch(
+    process.env.REACTION_MSG_ID
+  );
+  roleList.forEach((r) => reactionMessage.react(r.emoji));
+
   const bdayChannel = server.channels.cache.get(process.env.BDAY_CHANNEL_ID);
 
+  // TODO: Set cron job to go off daily instead of by min
   const bdayCheck = new CronJob("* * * * *", async () => {
     const today = new Date()
       .toLocaleDateString("en-US", {
@@ -128,6 +139,33 @@ client.on(Events.GuildMemberRemove, async (member) => {
   } catch (err) {
     console.log("Member Remove Error:", err);
   }
+});
+
+// TODO: add 1 reaction to the message by default on ready
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+  //console.log("working", reaction, user);
+
+  const member = await reaction.message.guild.members.fetch(user.id);
+  if (user.bot) {
+    return;
+  }
+  roleList.forEach(async (r) => {
+    if (reaction.emoji.name == r.emoji) {
+      await member.roles.add(r.id);
+    }
+  });
+});
+
+client.on(Events.MessageReactionRemove, async (reaction, user) => {
+  if (user.bot) {
+    return;
+  }
+  const member = await reaction.message.guild.members.fetch(user.id);
+  roleList.forEach(async (r) => {
+    if (reaction.emoji.name == r.emoji) {
+      await member.roles.remove(r.id);
+    }
+  });
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
