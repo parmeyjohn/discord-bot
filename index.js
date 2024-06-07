@@ -5,7 +5,7 @@ const {
   Collection,
   Events,
   GatewayIntentBits,
-  User,
+  EmbedBuilder,
 } = require("discord.js");
 require("dotenv").config();
 const mongoose = require("mongoose");
@@ -131,6 +131,24 @@ client.on(Events.GuildMemberAdd, async (member) => {
   } catch (err) {
     console.log("Member Add Error:", err);
   }
+  const server = client.guilds.cache.get(process.env.GUILD_ID);
+
+  const welcomeChannel = server.channels.cache.get(
+    process.env.WELCOME_CHANNEL_ID
+  );
+
+  const welcomeEmbed = new EmbedBuilder()
+    .setTitle("Welcome to [server name]!")
+    .setDescription(`We're happy to see you <@${member.user.id}>`)
+    .setColor("LuminousVividPink")
+    .setFields({
+      name: "Please complete the following tasks:",
+      value: `- Get your roles at <#${process.env.ROLES_CHANNEL_ID}\n- Agree to our rules at <#${process.env.RULES_CHANNEL_ID}\n>`,
+    })
+    .setImage(
+      "https://media.discordapp.net/attachments/1220292967299022870/1248103818839855174/Picsart_24-06-05_19-37-52-187.jpg?ex=6663c443&is=666272c3&hm=0ececd3bf1352acd2d3076a73332f8621bdd98d3b151cdab9dd3d173120f6e77&=&format=webp&width=352&height=625"
+    );
+  welcomeChannel.send({ embeds: [welcomeEmbed] });
 });
 
 client.on(Events.GuildMemberRemove, async (member) => {
